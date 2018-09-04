@@ -9,6 +9,17 @@ import (
 	"go.uber.org/zap"
 )
 
+const (
+	INFO   = "info"
+	ERR    = "err"
+	ERROR  = "error"
+	DEBUG  = "debug"
+	WARN   = "warn"
+	FATAL  = "fatal"
+	PANIC  = "panic"
+	DPANIC = "dpanic"
+)
+
 var (
 	ErrKeyNotString       = errors.New("the key of each pair of keyvals should be string")
 	ErrKeyValPairMismatch = errors.New("the keyvals should not match the condition (len(keyvals) < 2 || len(keyvals)%2 != 0)")
@@ -63,19 +74,19 @@ func (k *Logger) Log(keyvals ...interface{}) error {
 	}
 	msg := fmt.Sprintf("%v", keyvals[1])
 	switch level {
-	case "info":
+	case INFO:
 		k.zapLogger.Info(msg, fields...)
-	case "err", "error":
+	case ERR, ERROR:
 		k.zapLogger.Error(msg, fields...)
-	case "debug":
+	case DEBUG:
 		k.zapLogger.Debug(msg, fields...)
-	case "warn":
+	case WARN:
 		k.zapLogger.Warn(msg, fields...)
-	case "fatal":
+	case FATAL:
 		k.zapLogger.Fatal(msg, fields...)
-	case "panic":
+	case PANIC:
 		k.zapLogger.Panic(msg, fields...)
-	case "dpanic":
+	case DPANIC:
 		k.zapLogger.DPanic(msg, fields...)
 	default:
 		k.zapLogger.DPanic(ErrLogLevelNotFound.Error())
