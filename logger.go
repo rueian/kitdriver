@@ -85,6 +85,10 @@ func (k *Logger) Log(keyvals ...interface{}) error {
 	return nil
 }
 
+func (k *Logger) Sync() {
+	k.zapLogger.Sync()
+}
+
 func (k *Logger) key(key interface{}) (string, error) {
 	s, ok := key.(string)
 	if !ok {
