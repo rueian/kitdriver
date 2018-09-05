@@ -3,10 +3,11 @@ package kitdriver
 import (
 	"errors"
 	"fmt"
-	"runtime"
+	"runtime/debug"
 
 	"github.com/blendle/zapdriver"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 )
 
 const (
@@ -30,20 +31,44 @@ type GokitLogger interface {
 	Log(keyvals ...interface{}) error
 }
 
-func NewProduction(options ...zap.Option) (*Logger, error) {
-	zapLogger, err := zapdriver.NewProduction(options...)
+type ServiceContext struct {
+	Service string
+	Version string
+}
+
+func (l *ServiceContext) MarshalLogObject(e zapcore.ObjectEncoder) error {
+	e.AddString("service", l.Service)
+	e.AddString("version", l.Version)
+	return nil
+}
+
+func NewProduction(service, version string, options ...zap.Option) (*Logger, error) {
+	config := alterConfig(zapdriver.NewProductionConfig())
+	zapLogger, err := config.Build(append(options, zapdriver.WrapCore())...)
 	if err != nil {
 		return nil, err
 	}
 	return &Logger{zapLogger}, nil
 }
 
-func NewDevelopment(options ...zap.Option) (*Logger, error) {
-	zapLogger, err := zapdriver.NewDevelopment(options...)
+func NewDevelopment(service, version string, options ...zap.Option) (*Logger, error) {
+	config := alterConfig(zapdriver.NewDevelopmentConfig())
+	zapLogger, err := config.Build(append(options, zapdriver.WrapCore())...)
 	if err != nil {
 		return nil, err
 	}
+	zapLogger = zapLogger.With(zap.Object("serviceContext", &ServiceContext{
+		Service: service,
+		Version: version,
+	}))
 	return &Logger{zapLogger}, nil
+}
+
+func alterConfig(config zap.Config) zap.Config {
+	config.DisableStacktrace = true
+	config.DisableCaller = true
+	config.EncoderConfig.TimeKey = "timestamp"
+	return config
 }
 
 type Logger struct {
@@ -56,9 +81,7 @@ func (k *Logger) Log(keyvals ...interface{}) error {
 		return ErrKeyValPairMismatch
 	}
 
-	fields := []zap.Field{
-		zapdriver.SourceLocation(runtime.Caller(1)),
-	}
+	var fields []zap.Field
 	for i := 2; i < len(keyvals); i = i + 2 {
 		key, err := k.key(keyvals[i])
 		if err != nil {
@@ -72,18 +95,21 @@ func (k *Logger) Log(keyvals ...interface{}) error {
 	if err != nil {
 		return err
 	}
+
 	msg := fmt.Sprintf("%v", keyvals[1])
 	switch level {
 	case INFO:
 		k.zapLogger.Info(msg, fields...)
 	case ERR, ERROR:
-		k.zapLogger.Error(msg, fields...)
+		stack := string(debug.Stack())
+		k.zapLogger.Error(msg+"\n"+stack, fields...)
 	case DEBUG:
 		k.zapLogger.Debug(msg, fields...)
 	case WARN:
 		k.zapLogger.Warn(msg, fields...)
 	case FATAL:
-		k.zapLogger.Fatal(msg, fields...)
+		stack := string(debug.Stack())
+		k.zapLogger.Fatal(msg+"\n"+stack, fields...)
 	case PANIC:
 		k.zapLogger.Panic(msg, fields...)
 	case DPANIC:
