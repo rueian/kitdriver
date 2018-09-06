@@ -3,6 +3,7 @@ package kitdriver
 import (
 	"errors"
 	"fmt"
+	"runtime"
 	"runtime/debug"
 
 	"github.com/blendle/zapdriver"
@@ -104,6 +105,7 @@ func (k *Logger) Log(keyvals ...interface{}) error {
 		stack := string(debug.Stack())
 		k.zapLogger.Error(msg+"\n"+stack, fields...)
 	case DEBUG:
+		fields = append(fields, zapdriver.SourceLocation(runtime.Caller(1)))
 		k.zapLogger.Debug(msg, fields...)
 	case WARN:
 		k.zapLogger.Warn(msg, fields...)
