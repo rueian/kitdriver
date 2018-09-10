@@ -73,12 +73,12 @@ func alterConfig(config zap.Config) zap.Config {
 }
 
 type Logger struct {
-	zapLogger *zap.Logger
+	ZapLogger *zap.Logger
 }
 
 func (k *Logger) Log(keyvals ...interface{}) error {
 	if len(keyvals) < 2 || len(keyvals)%2 != 0 {
-		k.zapLogger.DPanic(ErrKeyValPairMismatch.Error())
+		k.ZapLogger.DPanic(ErrKeyValPairMismatch.Error())
 		return ErrKeyValPairMismatch
 	}
 
@@ -100,24 +100,24 @@ func (k *Logger) Log(keyvals ...interface{}) error {
 	msg := fmt.Sprintf("%v", keyvals[1])
 	switch level {
 	case INFO:
-		k.zapLogger.Info(msg, fields...)
+		k.ZapLogger.Info(msg, fields...)
 	case ERR, ERROR:
 		stack := string(debug.Stack())
-		k.zapLogger.Error(msg+"\n"+stack, fields...)
+		k.ZapLogger.Error(msg+"\n"+stack, fields...)
 	case DEBUG:
 		fields = append(fields, zapdriver.SourceLocation(runtime.Caller(1)))
-		k.zapLogger.Debug(msg, fields...)
+		k.ZapLogger.Debug(msg, fields...)
 	case WARN:
-		k.zapLogger.Warn(msg, fields...)
+		k.ZapLogger.Warn(msg, fields...)
 	case FATAL:
 		stack := string(debug.Stack())
-		k.zapLogger.Fatal(msg+"\n"+stack, fields...)
+		k.ZapLogger.Fatal(msg+"\n"+stack, fields...)
 	case PANIC:
-		k.zapLogger.Panic(msg, fields...)
+		k.ZapLogger.Panic(msg, fields...)
 	case DPANIC:
-		k.zapLogger.DPanic(msg, fields...)
+		k.ZapLogger.DPanic(msg, fields...)
 	default:
-		k.zapLogger.DPanic(ErrLogLevelNotFound.Error())
+		k.ZapLogger.DPanic(ErrLogLevelNotFound.Error())
 		return ErrLogLevelNotFound
 	}
 
@@ -125,13 +125,13 @@ func (k *Logger) Log(keyvals ...interface{}) error {
 }
 
 func (k *Logger) Sync() {
-	k.zapLogger.Sync()
+	k.ZapLogger.Sync()
 }
 
 func (k *Logger) key(key interface{}) (string, error) {
 	s, ok := key.(string)
 	if !ok {
-		k.zapLogger.DPanic(ErrKeyNotString.Error())
+		k.ZapLogger.DPanic(ErrKeyNotString.Error())
 		return "", ErrKeyNotString
 	}
 	return s, nil
